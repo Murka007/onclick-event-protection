@@ -79,7 +79,7 @@
 
     function toString2(value) {
         const error = new CopyError(value).stack;
-        return error.slice(7, error.indexOf("\n    at"));
+        return slice(error, 7, indexOf(error, "\n    at"));
     }
 
     function toString3(value) {
