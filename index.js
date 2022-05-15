@@ -33,6 +33,18 @@
     [native code]
 }`;
     
+    // slice polyfill, to prevent from hooking String.prototype.slice
+    // doesn't work for negative numbers
+    function slice(string, start, end) {
+        let output = "";
+        for (let i=0;i<string.length;i++) {
+            if (i >= start && i < end) {
+                output += string[i];
+            }
+        }
+        return output;
+    }
+    
     // indexOf polyfill, to prevent from hooking String.prototype.indexOf
     function indexOf(string, substring, fromIndex = 0) {
         if (substring === "") {
@@ -77,7 +89,7 @@
             const stack = error.stack;
             const index1 = indexOf(stack, "'", 40) + 1;
             const index2 = indexOf(stack, "' in 0");
-            return stack.slice(index1, index2);
+            return slice(stack, index1, index2);
         }
     }
 
