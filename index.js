@@ -385,5 +385,8 @@
         // Tada, you have passed all checks
         // Event is real or it's well hidden
     }
+    
+    // I will click it for you :)
+    button.click();
 
 })();
