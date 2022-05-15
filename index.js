@@ -70,6 +70,19 @@
         return typeof value !== "undefined";
     }
     
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex != 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+
+            [array[currentIndex], array[randomIndex]] = [
+                array[randomIndex], array[currentIndex]
+            ];
+        }
+        return array;
+    }
+    
     button.onclick = function(event) {
 
         while (checksContainer.firstChild) {
@@ -356,6 +369,9 @@
                 }
             }
         ];
+        
+        // Shuffle array, to prevent hooks depend on each other
+        shuffle(checks);
 
         // Count is important, we want to be sure that all checks are Passed
         let count = 0;
