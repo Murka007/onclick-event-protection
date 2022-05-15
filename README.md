@@ -9,6 +9,8 @@ Even though the most advanced techniques are used here, it is still possible to 
 
 You can try to write your own hooks, so it will pass all checks when you call `document.getElementById("btn").click();`
 
+Look at demo version: https://murka007.github.io/onclick-event-protection/
+
 ### More about
 - it has Chrome and FireFox support
 - Object, Event and PointerEvent checks are not included
