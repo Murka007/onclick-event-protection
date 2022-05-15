@@ -32,6 +32,34 @@
     const StringMouseEvent = `function MouseEvent() {
     [native code]
 }`;
+    
+    // indexOf polyfill, to prevent from hooking String.prototype.indexOf
+    function indexOf(string, substring, fromIndex = 0) {
+        if (substring === "") {
+            if (fromIndex > string.length) return string.length;
+            if (fromIndex < 0) return 0;
+            return fromIndex;
+        }
+        if (substring.length >= string.length) return substring === string ? 0 : -1;
+
+        for (let i = fromIndex; i < string.length; i++) {
+            if (substring[0] !== string[i] || substring[substring.length - 1] !== string[i + substring.length - 1]) {
+                continue;
+            }
+
+            let foundSubstring = true;
+            for (let j = 1; j < substring.length - 1; j++) {
+                if (substring[j] !== string[i + j]) {
+                    foundSubstring = false;
+                    break;
+                }
+            }
+
+            if (!foundSubstring) continue;
+            return i;
+        }
+        return -1;
+    }
 
     function toString1(value) {
         return value.toString();    
@@ -47,7 +75,9 @@
             value in 0;
         } catch (error) {
             const stack = error.stack;
-            return stack.slice(stack.indexOf("'", 40) + 1, stack.indexOf("' in 0"));
+            const index1 = indexOf(stack, "'", 40) + 1;
+            const index2 = indexOf(stack, "' in 0");
+            return stack.slice(index1, index2);
         }
     }
 
