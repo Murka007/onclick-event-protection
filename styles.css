@@ -2,6 +2,7 @@
     font-size: 15px;
     font-weight: 700;
     font-family: Arial, Helvetica, sans-serif;
+    user-select: none;
 }
 
 body {
@@ -12,6 +13,14 @@ body {
 #btn {
     width: 100px;
     height: 50px;
+    cursor: pointer;
+}
+
+#right-container {
+    display: inline-block;
+    cursor: pointer;
+}
+#right-container * {
     cursor: pointer;
 }
 
