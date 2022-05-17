@@ -1,7 +1,7 @@
 # Onclick-event-protection
 The most advanced techniques to protect onclick event
 
-![https://murka007.github.io/onclick-event-protection/](https://i.imgur.com/2Iku7FA.png)
+![https://murka007.github.io/onclick-event-protection/](https://i.imgur.com/xGb7IQX.png)
 
 ### What is it for?
 Detecting modified prototypes is useful when you don't want third party scripts from changing content on your web page - including anti cheats for browser games.
