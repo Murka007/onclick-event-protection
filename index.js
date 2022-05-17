@@ -2,6 +2,13 @@
 
     const button = document.getElementById("btn");
     const checksContainer = document.getElementById("checks-container");
+    const shuffleToggle = document.getElementById("toggleShuffle");
+
+    const isShuffle = !!JSON.parse(localStorage.getItem("isShuffle"));
+    shuffleToggle.checked = isShuffle;
+    shuffleToggle.onchange = function(event) {
+        localStorage.setItem("isShuffle", event.target.checked);
+    }
 
     // Copies of methods, so Object.defineProperty will have less power
     const CopyReflect = window.Reflect;
@@ -71,6 +78,19 @@
             return i;
         }
         return -1;
+    }
+
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex != 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+    
+            [array[currentIndex], array[randomIndex]] = [
+                array[randomIndex], array[currentIndex]
+            ];
+        }
+        return array;
     }
 
     function toString1(value) {
@@ -398,6 +418,9 @@
                 }
             }
         ];
+
+        // Shuffle array of tests, to make hooks not depend on each other
+        if (shuffleToggle.checked) shuffle(checks);
 
         // Count is important, we want to be sure that all checks are Passed
         let count = 0;
