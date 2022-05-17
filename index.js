@@ -9,7 +9,7 @@
     shuffleToggle.onchange = function(event) {
         localStorage.setItem("isShuffle", event.target.checked);
     }
-
+    
     // Copies of methods, so Object.defineProperty will have less power
     const CopyReflect = window.Reflect;
     const CopyError = window.Error;
@@ -488,7 +488,7 @@
         elem.style.fontSize = "25px";
         elem.classList.add("check");
         elem.classList.add(isOK ? "native" : "fake");
-        elem.textContent = isOK ? "Click event is Trusted!!!" : "Click event is FAKE!!!";
+        elem.textContent = "Click event is " + (isOK ? "Trusted!!!" : "FAKE!!!");
         checksContainer.appendChild(elem);
 
         // Tada, you have passed all checks
