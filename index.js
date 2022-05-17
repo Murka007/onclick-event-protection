@@ -28,6 +28,7 @@
     const getOwnPropertyDescriptor = CopyObject.getOwnPropertyDescriptor;
     const getOwnPropertyDescriptors = CopyObject.getOwnPropertyDescriptors;
     const ReflectGetOwnPropertyDescriptor = CopyReflect.getOwnPropertyDescriptor;
+    const prepareStackTrace = CopyError.prepareStackTrace;
     const ObjectFunction = "[object Function]";
     const StringObject = "function Object() { [native code] }";
     const ObjectPointerEvent = "[object PointerEvent]";
@@ -208,6 +209,14 @@
                 name: "delete event.isTrusted",
                 test() {
                     return !(delete event.isTrusted);
+                }
+            },
+            {
+                name: "event.isTrusted assignment check",
+                test() {
+                    const prev = event.isTrusted;
+                    event.isTrusted = null;
+                    return event.isTrusted === prev;
                 }
             },
             {
@@ -411,10 +420,45 @@
                 }
             },
             {
-                name: "Error.prepareStackTrace check",
+                name: "prepareStackTrace === undefined",
+                test() {
+                    return prepareStackTrace === undefined;
+                }
+            },
+            {
+                name: "Error.prepareStackTrace descriptors",
                 test() {
                     const descriptors = getDescriptors(Error, "prepareStackTrace");
                     return descriptors.every(value => value === undefined);
+                }
+            },
+            {
+                name: "CopyObjectString.call(prepareStackTrace) === '[object Undefined]'",
+                test() {
+                    return CopyObjectString.call(prepareStackTrace) === '[object Undefined]';
+                }
+            },
+            {
+                name: "CopyFunctionString.call(prepareStackTrace) check",
+                test() {
+                    try {
+                        CopyFunctionString.call(prepareStackTrace);
+                    } catch(err) {
+                        return true;
+                    }
+                    return false;
+                }
+            },
+            {
+                name: "toString2(prepareStackTrace) === ''",
+                test() {
+                    return !StackSupport || toString2(prepareStackTrace) === '';
+                }
+            },
+            {
+                name: "toString3(prepareStackTrace) === 'undefined'",
+                test() {
+                    return !StackSupport || toString3(prepareStackTrace) === 'undefined';
                 }
             }
         ];
@@ -424,27 +468,27 @@
 
         // Count is important, we want to be sure that all checks are Passed
         let count = 0;
-        for (const check of checks) {
+        for (let i=0;i<checks.length;i++) {
+            const check = checks[i];
+            let isNative = null;
             try {
-                const isNative = check.test();
-                const elem = document.createElement("div");
-                elem.classList.add("check");
-                elem.classList.add(isNative ? "native" : "fake");
-                elem.textContent = (isNative ? "Passed: " : "Failed: ") + check.name;
-                checksContainer.appendChild(elem);
-                if (!isNative) return;
-                count++;
-            } catch (err) {
-                console.log(err);
-            }
+                isNative = check.test();
+            } catch (err) {}
+
+            const elem = document.createElement("div");
+            elem.classList.add("check");
+            elem.classList.add(isNative ? "native" : "fake");
+            elem.textContent = (i + 1 + " ") + (isNative ? "Passed: " : "Failed: ") + check.name;
+            checksContainer.appendChild(elem);
+            if (isNative) count++;
         }
 
-        if (count !== checks.length) return;
+        const isOK = count === checks.length;
         const elem = document.createElement("div");
         elem.style.fontSize = "25px";
         elem.classList.add("check");
-        elem.classList.add("native");
-        elem.textContent = "Click event is Trusted!!!";
+        elem.classList.add(isOK ? "native" : "fake");
+        elem.textContent = isOK ? "Click event is Trusted!!!" : "Click event is FAKE!!!";
         checksContainer.appendChild(elem);
 
         // Tada, you have passed all checks
