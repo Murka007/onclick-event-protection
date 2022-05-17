@@ -473,7 +473,9 @@
             let isNative = null;
             try {
                 isNative = check.test();
-            } catch (err) {}
+            } catch (err) {
+                console.log(err, check);
+            }
 
             const elem = document.createElement("div");
             elem.classList.add("check");
