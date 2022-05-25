@@ -11,35 +11,41 @@
     }
     
     // Copies of methods, so Object.defineProperty will have less power
+    const CopyProxy = window.Proxy;
     const CopyReflect = window.Reflect;
     const CopyError = window.Error;
     const CopyFunction = window.Function;
+    
     const CopyObject = window.Object;
     const CopyEvent = window.Event;
-    const CopyPointerEvent = window.PointerEvent;
+    const CopyUIEvent = window.UIEvent;
     const CopyMouseEvent = window.MouseEvent;
+    const CopyPointerEvent = window.PointerEvent;
+
     const CopyObjectString = CopyObject.prototype.toString;
     const CopyFunctionString = CopyFunction.prototype.toString;
+    
     const ObjectKeys = CopyObject.keys;
     const ObjectValues = CopyObject.values;
     const ObjectEntries = CopyObject.entries;
+    
     const getOwnPropertyNames = CopyObject.getOwnPropertyNames;
     const getOwnPropertySymbols = CopyObject.getOwnPropertySymbols;
     const getOwnPropertyDescriptor = CopyObject.getOwnPropertyDescriptor;
     const getOwnPropertyDescriptors = CopyObject.getOwnPropertyDescriptors;
     const ReflectGetOwnPropertyDescriptor = CopyReflect.getOwnPropertyDescriptor;
+    
     const prepareStackTrace = CopyError.prepareStackTrace;
+    const dispatchEvent = document.body.dispatchEvent;
     const ObjectFunction = "[object Function]";
     const StringObject = "function Object() { [native code] }";
+
+    const ObjectMouseEvent = "[object MouseEvent]";
     const ObjectPointerEvent = "[object PointerEvent]";
     const ClassPointerEvent = "#<PointerEvent>";
-    const StringPointerEvent = "function PointerEvent() { [native code] }";
 
-    // Firefox support
-    const ObjectMouseEvent = "[object MouseEvent]"
-    const StringMouseEvent = `function MouseEvent() {
-    [native code]
-}`;
+    const StringMouseEvent = `function MouseEvent() {\n    [native code]\n}`;
+    const StringPointerEvent = "function PointerEvent() { [native code] }";
     
     // slice polyfill, to prevent from hooking String.prototype.slice
     // doesn't work for negative numbers
@@ -114,6 +120,24 @@
         }
     }
 
+    function toString4(value) {
+        return CopyFunctionString.call(value);
+    }
+
+    function toString5(value) {
+        return CopyObjectString.call(value);
+    }
+
+    // Check if browser supports Error.prototype.stack;
+    const StackSupport = toString2(CopyObject) === StringObject && toString3(CopyObject) === StringObject;
+    function checkString(method, value, strings) {
+        const result = strings.some(str => method(value) === str);
+        if (method === toString2 || method === toString3) {
+            return !StackSupport || result;
+        }
+        return result;
+    }
+
     // 3 different ways to get descriptors
     function getDescriptors(object, key) {
         const d1 = getOwnPropertyDescriptor;
@@ -126,11 +150,16 @@
         return descriptors;
     }
 
-    // Check if browser supports Error.prototype.stack;
-    const StackSupport = toString2(CopyObject) === StringObject && toString3(CopyObject) === StringObject;
-
     function exist(value) {
         return typeof value !== "undefined";
+    }
+
+    function has(object, key) {
+        return (typeof object === "object") && (key in object) && object.hasOwnProperty(key);
+    }
+
+    function arrayEquals(arr1, arr2) {
+        return arr1.length === arr2.length && arr1.every((value, i) => value === arr2[i]);
     }
     
     button.onclick = function(event) {
@@ -143,72 +172,95 @@
         const CopyConstructor = event.constructor;
         const CopyProto = event.__proto__;
         const CopyProtoConstructor = CopyProto.constructor;
+        const ConstructorArray = [CopyObject, CopyEvent, CopyUIEvent, CopyMouseEvent, CopyPointerEvent];
 
         const checks = [
             {
-                name: "event instanceof CopyObject",
+                name: "event instanceof ConstructorArray",
                 test() {
-                    return event instanceof CopyObject;
+                    const expected1 = [true, true, true, true, true];
+                    const expected2 = [true, true, true, true, false];
+                    const test = ConstructorArray.map(value => (event instanceof value));
+                    return arrayEquals(test, expected1) || arrayEquals(test, expected2);
                 }
             },
             {
-                name: "event instanceof CopyEvent",
+                name: "CopyConstructor instanceof ConstructorArray",
                 test() {
-                    return event instanceof CopyEvent;
+                    const expected = [true, false, false, false, false];
+                    const test = ConstructorArray.map(value => (CopyConstructor instanceof value));
+                    return arrayEquals(test, expected);
                 }
             },
             {
-                name: "event instanceof CopyPointerEvent",
+                name: "CopyProto instanceof ConstructorArray",
                 test() {
-                    return event instanceof CopyPointerEvent || CopyConstructor === CopyMouseEvent;
+                    const expected1 = [true, true, true, true, false];
+                    const expected2 = [true, true, true, false, false]; // firefox support
+                    const test = ConstructorArray.map(value => (CopyProto instanceof value));
+                    return arrayEquals(test, expected1) || arrayEquals(test, expected2);
                 }
             },
             {
-                name: "event instanceof CopyConstructor",
+                name: "CopyProtoConstructor instanceof ConstructorArray",
                 test() {
-                    return event instanceof CopyConstructor;
+                    const expected = [true, false, false, false, false];
+                    const test = ConstructorArray.map(value => (CopyProtoConstructor instanceof value));
+                    return arrayEquals(test, expected);
                 }
             },
             {
-                name: "event instanceof CopyProtoConstructor",
+                name: "event === ConstructorArray",
                 test() {
-                    return event instanceof CopyProtoConstructor;
+                    const expected = [false, false, false, false, false];
+                    const test = ConstructorArray.map(value => (event === value));
+                    return arrayEquals(test, expected);
                 }
             },
             {
-                name: "CopyConstructor instanceof CopyObject",
+                name: "CopyConstructor === ConstructorArray",
                 test() {
-                    return CopyConstructor instanceof CopyObject;
+                    const expected1 = [false, false, false, false, true];
+                    const expected2 = [false, false, false, true, false]; // firefox support
+                    const test = ConstructorArray.map(value => (CopyConstructor === value));
+                    return arrayEquals(test, expected1) || arrayEquals(test, expected2);
                 }
             },
             {
-                name: "CopyConstructor === CopyPointerEvent",
+                name: "CopyProto === ConstructorArray",
                 test() {
-                    return CopyConstructor === CopyPointerEvent || CopyConstructor === CopyMouseEvent;
+                    const expected = [false, false, false, false, false];
+                    const test = ConstructorArray.map(value => (CopyProto === value));
+                    return arrayEquals(test, expected);
                 }
             },
             {
-                name: "CopyObject !== CopyEvent",
+                name: "CopyProtoConstructor instanceof ConstructorArray",
                 test() {
-                    return CopyObject !== CopyEvent;
+                    const expected1 = [false, false, false, false, true];
+                    const expected2 = [false, false, false, true, false]; // firefox support
+                    const test = ConstructorArray.map(value => (CopyProtoConstructor === value));
+                    return arrayEquals(test, expected1) || arrayEquals(test, expected2);
                 }
             },
             {
-                name: "CopyObject !== CopyPointerEvent",
+                name: "Constructors shouldn't equal each other",
                 test() {
-                    return CopyObject !== CopyPointerEvent;
-                }
-            },
-            {
-                name: "CopyEvent !== CopyPointerEvent",
-                test() {
-                    return CopyEvent !== CopyPointerEvent;
+                    for (const value of ConstructorArray) {
+                        const list = ConstructorArray.slice();
+                        list.splice(list.indexOf(value), 1);
+                        const equals = list.every(item => item === value);
+                        if (equals) return false;
+                    }
+                    return true;
                 }
             },
             {
                 name: "delete event.isTrusted",
                 test() {
-                    return !(delete event.isTrusted);
+                    const prev = event.isTrusted;
+                    const deleteError = !(delete event.isTrusted);
+                    return deleteError && event.isTrusted === prev;
                 }
             },
             {
@@ -226,61 +278,46 @@
                 }
             },
             {
-                name: "Check for isTrusted getter",
+                name: "Check for isTrusted descriptors",
                 test() {
-                    const getter = getOwnPropertyDescriptor(event, "isTrusted").get;
-                    return typeof getter === "function";
+                    const descriptors = getDescriptors(event, "isTrusted");
+                    return descriptors.every(desc => {
+                        const setter = has(desc, "set") && desc.set === undefined;
+                        const getter = has(desc, "get") && typeof desc.get === "function";
+                        return setter && getter;
+                    })
                 }
             },
             {
                 name: "delete event.__proto__",
                 test() {
-                    return (delete event.__proto__);
+                    const prev = event.__proto__;
+                    delete event.__proto__;
+                    return event.__proto__ === prev;
                 }
             },
             {
-                name: "CopyProto === event.__proto__",
+                name: "CopyConstructor and CopyProtoConstructor 1 argument required check",
                 test() {
-                    return CopyProto === event.__proto__;
+                    try {
+                        new CopyConstructor();
+                        new CopyProtoConstructor();
+                    } catch(err) {
+                        return true;
+                    }
+                    return false;
                 }
             },
             {
-                name: "CopyConstructor === CopyProtoConstructor",
+                name: "CopyConstructor and CopyProtoConstructor dispatchEvent check",
                 test() {
-                    return CopyConstructor === CopyProtoConstructor;
-                }
-            },
-            {
-                name: "CopyObjectString.call(event) === '[object PointerEvent]'",
-                test() {
-                    const value = CopyObjectString.call(event);
-                    return value === ObjectPointerEvent || value === ObjectMouseEvent;
-                }
-            },
-            {
-                name: "CopyObjectString.call(CopyConstructor) === '[object Function]'",
-                test() {
-                    return CopyObjectString.call(CopyConstructor) === ObjectFunction;
-                }
-            },
-            {
-                name: "CopyObjectString.call(CopyProtoConstructor) === '[object Function]'",
-                test() {
-                    return CopyObjectString.call(CopyProtoConstructor) === ObjectFunction;
-                }
-            },
-            {
-                name: "CopyFunctionString.call(CopyConstructor) === StringPointerEvent",
-                test() {
-                    const value = CopyFunctionString.call(CopyConstructor);
-                    return value === StringPointerEvent || value === StringMouseEvent;
-                }
-            },
-            {
-                name: "CopyFunctionString.call(CopyProtoConstructor) === StringPointerEvent",
-                test() {
-                    const value = CopyFunctionString.call(CopyProtoConstructor);
-                    return value === StringPointerEvent || value === StringMouseEvent;
+                    try {
+                        dispatchEvent(new CopyConstructor({}));
+                        dispatchEvent(new CopyProtoConstructor({}));
+                    } catch(err) {
+                        return false;
+                    }
+                    return true;
                 }
             },
             {
@@ -320,105 +357,118 @@
                 }
             },
             {
-                name: "toString1(event) === '[object PointerEvent]'",
+                name: "toString1(event) === ObjectPointerEvent",
                 test() {
-                    const value = toString1(event);
-                    return value === ObjectPointerEvent || value === ObjectMouseEvent;
+                    return checkString(toString1, event, [ObjectMouseEvent, ObjectPointerEvent]);
                 }
             },
             {
                 name: "toString1(CopyConstructor) === StringPointerEvent",
                 test() {
-                    const value = toString1(CopyConstructor);
-                    return value === StringPointerEvent || value === StringMouseEvent;
+                    return checkString(toString1, CopyConstructor, [StringMouseEvent, StringPointerEvent]);
                 }
             },
             {
-                name: "toString1(CopyProto) === '[object PointerEvent]'",
+                name: "toString1(CopyProto) === ObjectPointerEvent",
                 test() {
-                    const value = toString1(CopyProto);
-                    return value === ObjectPointerEvent || value === ObjectMouseEvent;
+                    return checkString(toString1, CopyProto, [ObjectMouseEvent, ObjectPointerEvent]);
                 }
             },
             {
                 name: "toString1(CopyProtoConstructor) === StringPointerEvent",
                 test() {
-                    const value = toString1(CopyProtoConstructor);
-                    return value === StringPointerEvent || value === StringMouseEvent;
+                    return checkString(toString1, CopyProtoConstructor, [StringMouseEvent, StringPointerEvent]);
                 }
             },
+            
             {
-                name: "toString2(event) === '[object PointerEvent]'",
+                name: "toString2(event) === ObjectPointerEvent",
                 test() {
-                    return !StackSupport || toString2(event) === ObjectPointerEvent;
+                    return checkString(toString2, event, [ObjectPointerEvent]);
                 }
             },
             {
                 name: "toString2(CopyConstructor) === StringPointerEvent",
                 test() {
-                    return !StackSupport || toString2(CopyConstructor) === StringPointerEvent;
+                    return checkString(toString2, CopyConstructor, [StringPointerEvent]);
                 }
             },
             {
-                name: "toString2(CopyProto) === '[object PointerEvent]'",
+                name: "toString2(CopyProto) === ObjectPointerEvent",
                 test() {
-                    return !StackSupport || toString2(CopyProto) === ObjectPointerEvent;
+                    return checkString(toString2, CopyProto, [ObjectPointerEvent]);
                 }
             },
             {
                 name: "toString2(CopyProtoConstructor) === StringPointerEvent",
                 test() {
-                    return !StackSupport || toString2(CopyProtoConstructor) === StringPointerEvent;
+                    return checkString(toString2, CopyProtoConstructor, [StringPointerEvent]);
                 }
             },
+            
             {
-                name: "toString3(event) === '#<PointerEvent>'",
+                name: "toString3(event) === ClassPointerEvent",
                 test() {
-                    return !StackSupport || toString3(event) === ClassPointerEvent;
+                    return checkString(toString3, event, [ClassPointerEvent]);
                 }
             },
             {
                 name: "toString3(CopyConstructor) === StringPointerEvent",
                 test() {
-                    return !StackSupport || toString3(CopyConstructor) === StringPointerEvent;
+                    return checkString(toString3, CopyConstructor, [StringPointerEvent]);
                 }
             },
             {
-                name: "toString3(CopyProto) === '#<PointerEvent>'",
+                name: "toString3(CopyProto) === ClassPointerEvent",
                 test() {
-                    return !StackSupport || toString3(CopyProto) === ClassPointerEvent;
+                    return checkString(toString3, CopyProto, [ClassPointerEvent]);
                 }
             },
             {
                 name: "toString3(CopyProtoConstructor) === StringPointerEvent",
                 test() {
-                    return !StackSupport || toString3(CopyProtoConstructor) === StringPointerEvent;
+                    return checkString(toString3, CopyProtoConstructor, [StringPointerEvent]);
+                }
+            },
+            
+            {
+                name: "toString4(CopyConstructor) === StringPointerEvent",
+                test() {
+                    return checkString(toString4, CopyConstructor, [StringMouseEvent, StringPointerEvent]);
                 }
             },
             {
-                name: "CopyConstructor and CopyProtoConstructor 1 argument required check",
+                name: "toString4(CopyProtoConstructor) === StringPointerEvent",
                 test() {
-                    try {
-                        new CopyConstructor();
-                        new CopyProtoConstructor();
-                    } catch(err) {
-                        return true;
-                    }
-                    return false;
+                    return checkString(toString4, CopyProtoConstructor, [StringMouseEvent, StringPointerEvent]);
+                }
+            },
+
+            {
+                name: "toString5(event) === ObjectPointerEvent",
+                test() {
+                    return checkString(toString5, event, [ObjectMouseEvent, ObjectPointerEvent]);
                 }
             },
             {
-                name: "CopyConstructor and CopyProtoConstructor dispatchEvent check",
+                name: "toString5(CopyConstructor) === ObjectPointerEvent",
                 test() {
-                    try {
-                        document.body.dispatchEvent(new CopyConstructor({}));
-                        document.body.dispatchEvent(new CopyProtoConstructor({}));
-                    } catch(err) {
-                        return false;
-                    }
-                    return true;
+                    return checkString(toString5, CopyConstructor, [ObjectFunction]);
                 }
             },
+            {
+                name: "toString5(CopyProto) === ObjectPointerEvent",
+                test() {
+                    return checkString(toString5, CopyProto, [ObjectMouseEvent, ObjectPointerEvent]);
+                }
+            },
+            {
+                name: "toString5(CopyProtoConstructor) === ObjectPointerEvent",
+                test() {
+                    return checkString(toString5, CopyProtoConstructor, [ObjectFunction]);
+                }
+            },
+            
             {
                 name: "prepareStackTrace === undefined",
                 test() {
@@ -433,16 +483,22 @@
                 }
             },
             {
-                name: "CopyObjectString.call(prepareStackTrace) === '[object Undefined]'",
+                name: "toString2(prepareStackTrace) === ''",
                 test() {
-                    return CopyObjectString.call(prepareStackTrace) === '[object Undefined]';
+                    return checkString(toString2, prepareStackTrace, ['']);
                 }
             },
             {
-                name: "CopyFunctionString.call(prepareStackTrace) check",
+                name: "toString3(prepareStackTrace) === 'undefined'",
+                test() {
+                    return checkString(toString3, prepareStackTrace, ['undefined']);
+                }
+            },
+            {
+                name: "toString4(prepareStackTrace) check",
                 test() {
                     try {
-                        CopyFunctionString.call(prepareStackTrace);
+                        toString4(prepareStackTrace);
                     } catch(err) {
                         return true;
                     }
@@ -450,15 +506,9 @@
                 }
             },
             {
-                name: "toString2(prepareStackTrace) === ''",
+                name: "toString5(prepareStackTrace) === '[object Undefined]'",
                 test() {
-                    return !StackSupport || toString2(prepareStackTrace) === '';
-                }
-            },
-            {
-                name: "toString3(prepareStackTrace) === 'undefined'",
-                test() {
-                    return !StackSupport || toString3(prepareStackTrace) === 'undefined';
+                    return toString5(prepareStackTrace) === '[object Undefined]';
                 }
             }
         ];
@@ -473,7 +523,7 @@
             let isNative = null;
             try {
                 isNative = check.test();
-            } catch (err) {}
+            } catch (err) {console.log(err.stack);}
 
             const elem = document.createElement("div");
             elem.classList.add("check");
