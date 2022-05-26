@@ -235,7 +235,7 @@
                 }
             },
             {
-                name: "CopyProtoConstructor instanceof ConstructorArray",
+                name: "CopyProtoConstructor === ConstructorArray",
                 test() {
                     const expected1 = [false, false, false, false, true];
                     const expected2 = [false, false, false, true, false]; // firefox support
