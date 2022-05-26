@@ -309,6 +309,18 @@
                 }
             },
             {
+                name: "CopyConstructor and CopyProtoConstructor 'new' operator check",
+                test() {
+                    try {
+                        CopyConstructor({});
+                        CopyProtoConstructor({});
+                    } catch(err) {
+                        return true;
+                    }
+                    return false;
+                }
+            },
+            {
                 name: "CopyConstructor and CopyProtoConstructor dispatchEvent check",
                 test() {
                     try {
